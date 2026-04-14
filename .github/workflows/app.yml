@@ -1,0 +1,45 @@
+name: CI App
+
+on:
+    pull_request:
+        branches:
+            - dev
+
+jobs:
+    build-app:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Create .env with required variables
+              run: |
+                  cd backend
+                  echo "JWT_SECRET_KEY=ci-test-secret-key" >> .env
+                  echo "RESEND_API_KEY=test-api-key" >> .env
+                  echo "RESEND_EMAIL_DOMAIN=resend.dev" >> .env
+
+            - name: Set up Docker
+              run: |
+                  docker --version
+
+            - name: Build Docker container
+              run: |
+                  docker compose up --build -d
+              continue-on-error: false
+
+            # - name: Build Frontend
+            # run: |
+            # cd frontend
+            # npm run build
+
+            - name: Check container logs
+              if: always()
+              run: |
+                  sleep 10
+                  docker compose logs backend
+
+            - name: Stop Docker
+              if: always()
+              run: docker compose down
