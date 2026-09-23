@@ -407,7 +407,7 @@
         "mySpace": "My Space",
         "contacts": "My Contacts",
         "discover": "Discover",
-        "whoAreWe": "Who are we?",
+        "whoAreWe": "About",
         "myAccount": "My Account",
         "admin": "Administration",
         "administration": "Administration",
@@ -426,7 +426,7 @@
         "learnMore": "Learn More",
         "uploadButton": "Transfer your files",
         "description": "Wild Transfer home page",
-        "disclaimer": "Wildtransfer is a study project created by students from the Wild Code School. For security reasons, we advise you not to provide sensitive or personal information. Use temporary emails to register, as well as passwords different from those you usually use, and do not share sensitive files."
+        "disclaimer": "Wildtransfer is a personal study project built as part of the DevOps program at ISCOD. For security reasons, it is advised not to provide sensitive or personal information. Use temporary emails to register, as well as passwords different from those you usually use, and do not share sensitive files."
     },
     "about": {
         "hero": {
@@ -447,11 +447,11 @@
             },
             "development": {
                 "title": "Development",
-                "description": "This project was developed by students from Wild Code School within a few months, demonstrating our ability to create innovative and functional solutions in record time."
+                "description": "This project was developed within a few months as part of the DevOps program at ISCOD, from design to deployment."
             },
             "quality": {
                 "title": "Quality & Best Practices",
-                "description": "Although this is a study project, we have focused on code quality, user experience and security, using modern development best practices."
+                "description": "Although this is a study project, the focus has been on code quality, user experience and security, using modern development best practices."
             }
         },
         "meta": {

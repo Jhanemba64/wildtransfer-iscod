@@ -83,7 +83,7 @@ export const VerifyAccountEmail = ({
                     </Text>
                 </Container>
                 <Text className="text-black text-[12px] font-extrabold leading-[23px] mt-5 m-0 text-center uppercase">
-                    {lang === 'fr' ? 'Sécurisé par WCS.' : 'Securely powered by WCS.'}
+                    {lang === 'fr' ? 'Sécurisé par ISCOD.' : 'Securely powered by ISCOD.'}
                 </Text>
             </Body>
         </Html>

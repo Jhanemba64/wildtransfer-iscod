@@ -2,7 +2,7 @@
 
 ## Présentation
 
-Application web de partage de fichiers sécurisé, réalisée comme POC/MVP pour le projet de fin d'études (Wild Code School, Concepteur Développeur d'Applications 2024-2025).
+Application web de partage de fichiers sécurisé, réalisée comme POC/MVP dans le cadre de la formation DevOps à ISCOD.
 
 **Principe :** Permettre aux utilisateurs de télécharger, partager et gérer leurs fichiers de manière sécurisée avec des options de partage temporaire (lien 30 min) ou permanent (contacts).
 

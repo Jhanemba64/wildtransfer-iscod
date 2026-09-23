@@ -408,7 +408,7 @@
         "mySpace": "Mon espace",
         "contacts": "Mes contacts",
         "discover": "Découvrir",
-        "whoAreWe": "Qui sommes nous ?",
+        "whoAreWe": "À propos",
         "myAccount": "Mon compte",
         "admin": "Administration",
         "administration": "Administration",
@@ -427,7 +427,7 @@
         "learnMore": "En savoir plus",
         "uploadButton": "Transférer vos fichiers",
         "description": "Page d'accueil de Wild Transfer",
-        "disclaimer": "Wildtransfer est un projet d'étude réalisé par des étudiants de la Wild Code School. Pour des raisons de sécurité nous vous conseillons de ne pas fournir des informations sensibles ou personnelles. Utilisez des emails temporaires pour vous inscrire ainsi que des mots de passe différents de ceux utilisés habituellement et ne partagez pas de fichiers sensibles."
+        "disclaimer": "Wildtransfer est un projet d'étude personnel réalisé dans le cadre de la formation DevOps à ISCOD. Pour des raisons de sécurité il est conseillé de ne pas fournir des informations sensibles ou personnelles. Utilisez des emails temporaires pour vous inscrire ainsi que des mots de passe différents de ceux utilisés habituellement et ne partagez pas de fichiers sensibles."
     },
     "about": {
         "hero": {
@@ -448,11 +448,11 @@
             },
             "development": {
                 "title": "Développement",
-                "description": "Ce projet a été développé par des étudiants de la Wild Code School dans un délai de quelques mois, démontrant notre capacité à créer des solutions innovantes et fonctionnelles en un temps record."
+                "description": "Ce projet a été développé en quelques mois dans le cadre de la formation DevOps à ISCOD, de la conception jusqu'au déploiement."
             },
             "quality": {
                 "title": "Qualité et bonnes pratiques",
-                "description": "Bien que ce soit un projet d'étude, nous avons mis l'accent sur la qualité du code, l'expérience utilisateur et la sécurité, en utilisant les meilleures pratiques de développement moderne."
+                "description": "Bien que ce soit un projet d'étude, l'accent a été mis sur la qualité du code, l'expérience utilisateur et la sécurité, en utilisant les meilleures pratiques de développement moderne."
             }
         },
         "meta": {

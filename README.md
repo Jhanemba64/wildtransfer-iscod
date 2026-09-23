@@ -49,7 +49,7 @@ Créer un fichier .env dans le dossier '/backend' avec ces champs :
 ```
 NODE_ENV=<development | staging | production>
 JWT_SECRET_KEY=<Entrer une chaine de caractères>
-RESEND_API_KEY=<Voir section 'api-keys' dans le Discord>
+RESEND_API_KEY=<Votre clé API Resend (https://resend.com)>
 RESEND_EMAIL_DOMAIN=wildtransfer.cloud
 ```
 
