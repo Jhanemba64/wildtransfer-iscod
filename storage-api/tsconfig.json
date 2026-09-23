@@ -6,7 +6,7 @@
     "skipLibCheck": true,
     "sourceMap": true,
     "outDir": "./dist",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "removeComments": true,
     "noImplicitAny": true,
     "strictNullChecks": true,

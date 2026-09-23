@@ -1,4 +1,4 @@
-import * as cookie from 'cookie';
+import { parseCookie } from 'cookie';
 import { NextFunction, Request, Response } from 'express';
 import jwt, { Secret } from 'jsonwebtoken';
 
@@ -60,7 +60,7 @@ export const authMiddleware = (
         // ========================================
         // On parse les cookies pour extraire le token
         // Les cookies sont au format "name=value; name2=value2"
-        const cookies = cookie.parse(req.headers.cookie);
+        const cookies = parseCookie(req.headers.cookie);
 
         // On vérifie que le cookie 'token' existe
         if (!cookies.token) {
