@@ -45,6 +45,8 @@ services:
         build:
             context: ./storage-api
             dockerfile: Dockerfile.prod
+        env_file:
+            - ./storage-api/.env
         healthcheck:
             test: "curl --fail --request GET --max-time 5 --url 'http://localhost:3000' || exit 1"
             interval: 5s

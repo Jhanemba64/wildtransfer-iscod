@@ -43,6 +43,8 @@ services:
             retries: 100
     storage-api:
         build: ./storage-api
+        env_file:
+            - ./storage-api/.env
         volumes:
             - ./storage-api/src:/app/src
             - ./storage-api/uploads:/app/uploads
