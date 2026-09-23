@@ -42,7 +42,7 @@ services:
             timeout: 10s
             retries: 100
     storage-api:
-        build: 
+        build:
             context: ./storage-api
             dockerfile: Dockerfile.prod
         healthcheck:

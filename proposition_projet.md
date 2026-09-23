@@ -2,7 +2,7 @@
 
 ## 1. C'est quoi ?
 
-**WildTransfer** est une application web de partage de fichiers simple d'usage, sécurisé avec un design épuré, reprenant les principe de Wetransfer. Ce projet s'inscrit dans le cadre de la formation Devops à Iscod.
+**WildTransfer** est une application web de partage de fichiers simple d'usage, sécurisée avec un design épuré, reprenant les principes de Wetransfer. Ce projet s'inscrit dans le cadre de la formation Devops à Iscod.
 
 ---
 
@@ -48,7 +48,7 @@ Une application permettant de **télécharger, partager et gérer des fichiers**
 
 ### Phase 4 — Fonctionnalités avancées
 - Dashboard administrateur et modérations
-- (FR/EN)
+- Internationalisation (FR/EN)
 
 ### Phase 5 — Tests et qualité
 - Tests unitaires
