@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { describe, it, expect } from 'vitest';
 import { cn, decodeJWT } from './globalUtils';
 
@@ -8,7 +7,8 @@ describe('cn', () => {
     });
 
     it('should handle conditional classes', () => {
-        expect(cn('base', false && 'hidden', 'visible')).toBe('base visible');
+        const isHidden = false;
+        expect(cn('base', isHidden && 'hidden', 'visible')).toBe('base visible');
     });
 
     it('should deduplicate conflicting tailwind classes', () => {
