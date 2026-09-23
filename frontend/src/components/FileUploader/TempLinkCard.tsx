@@ -101,6 +101,7 @@ const TempLinkCard: React.FC<TempLinkCardProps> = ({
                     <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                             <FilePreview
+                                context="card"
                                 fileName={link.fileName}
                                 fileUrl={link.url}
                                 className="h-6 w-6 flex-shrink-0"

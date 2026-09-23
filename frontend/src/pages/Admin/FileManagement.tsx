@@ -183,6 +183,7 @@ const FileManagement: React.FC = () => {
                                 >
                                     <div className="flex items-center gap-4">
                                         <FilePreview
+                                            context="card"
                                             fileName={file.name}
                                             fileUrl={file.url}
                                         />
