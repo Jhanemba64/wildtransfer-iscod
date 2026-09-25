@@ -47,7 +47,7 @@ Le serveur existant peut aussi être (re)provisionné sans Terraform :
 
 ```bash
 scp -r infra ubuntu@<serveur>:/tmp/infra
-ssh ubuntu@<serveur> "sudo DOMAIN=wildtransfer.cloud ACME_EMAIL=moi@exemple.com /tmp/infra/scripts/provision.sh"
+ssh ubuntu@<serveur> "sudo DOMAIN=wildtransfer.fr ACME_EMAIL=moi@exemple.com /tmp/infra/scripts/provision.sh"
 ```
 
 ## Sécurité appliquée

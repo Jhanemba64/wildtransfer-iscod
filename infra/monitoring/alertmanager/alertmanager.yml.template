@@ -1,8 +1,8 @@
-# Envoi des alertes par e-mail via le SMTP de Resend (domaine wildtransfer.cloud déjà validé).
+# Envoi des alertes par e-mail via le SMTP de Resend (domaine wildtransfer.fr, validé).
 # Le mot de passe SMTP et le destinataire sont remplis par deploy-monitoring.sh ; le fichier final n'est jamais versionné.
 global:
     smtp_smarthost: smtp.resend.com:587
-    smtp_from: 'WildTransfer Supervision <alertes@wildtransfer.cloud>'
+    smtp_from: 'WildTransfer Supervision <alertes@wildtransfer.fr>'
     smtp_auth_username: resend
     smtp_auth_password: '$SMTP_PASSWORD'
     smtp_require_tls: true
