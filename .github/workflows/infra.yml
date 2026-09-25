@@ -42,3 +42,18 @@ jobs:
                   docker run --rm -v "$PWD/infra/app/nginx.conf:/etc/nginx/nginx.conf:ro" \
                       --add-host backend:127.0.0.1 --add-host storage-api:127.0.0.1 --add-host frontend:127.0.0.1 \
                       nginx nginx -t
+
+    supervision:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Configuration Prometheus et règles d'alerte valides (promtool)
+              run: |
+                  docker run --rm --entrypoint promtool -v "$PWD/infra/monitoring/prometheus:/etc/prometheus:ro" \
+                      prom/prometheus:v3.4.2 check config /etc/prometheus/prometheus.yml
+            - name: Tableau de bord Grafana (JSON valide)
+              run: python3 -m json.tool infra/monitoring/grafana/dashboards/wildtransfer.json > /dev/null
+            - name: Compose de supervision valide
+              run: |
+                  touch infra/monitoring/grafana.env
+                  docker compose -f infra/monitoring/docker-compose.yml config --quiet

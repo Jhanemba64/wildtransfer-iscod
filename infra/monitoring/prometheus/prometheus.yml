@@ -1,0 +1,49 @@
+# Collecte des métriques toutes les 30 s ; règles d'alerte dans alerts.yml
+global:
+    scrape_interval: 30s
+    evaluation_interval: 30s
+
+rule_files:
+    - /etc/prometheus/alerts.yml
+
+alerting:
+    alertmanagers:
+        - static_configs:
+              - targets: ['127.0.0.1:9093']
+
+scrape_configs:
+    # Ressources du serveur AWS (CPU, mémoire, disque, réseau)
+    - job_name: serveur
+      static_configs:
+          - targets: ['127.0.0.1:9100']
+            labels: { env: aws }
+
+    # Sites web : la page d'accueil répond-elle en HTTPS ?
+    - job_name: site
+      metrics_path: /probe
+      params: { module: [http_2xx] }
+      static_configs:
+          - targets: ['https://52-47-201-60.sslip.io/']
+            labels: { env: production }
+          - targets: ['https://staging.52-47-201-60.sslip.io/']
+            labels: { env: staging }
+          - targets: ['https://wildtransfer.cloud/']
+            labels: { env: production-ovh }
+      relabel_configs: &blackbox
+          - source_labels: [__address__]
+            target_label: __param_target
+          - source_labels: [__param_target]
+            target_label: instance
+          - target_label: __address__
+            replacement: 127.0.0.1:9115
+
+    # API GraphQL : répond-elle à une vraie requête ?
+    - job_name: api
+      metrics_path: /probe
+      params: { module: [graphql] }
+      static_configs:
+          - targets: ['https://52-47-201-60.sslip.io/api']
+            labels: { env: production }
+          - targets: ['https://staging.52-47-201-60.sslip.io/api']
+            labels: { env: staging }
+      relabel_configs: *blackbox

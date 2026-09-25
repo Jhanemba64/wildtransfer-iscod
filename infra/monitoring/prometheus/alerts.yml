@@ -1,0 +1,61 @@
+# Règles d'alerte : chaque alerte déclenche un e-mail (Alertmanager), puis un e-mail de résolution
+groups:
+    - name: services
+      rules:
+          - alert: ServiceIndisponible
+            expr: probe_success == 0
+            for: 1m
+            labels: { severity: critique }
+            annotations:
+                summary: '{{ $labels.job }} {{ $labels.env }} indisponible'
+                description: '{{ $labels.instance }} ne répond plus correctement depuis 1 minute.'
+
+          - alert: ReponseLente
+            expr: probe_duration_seconds > 2
+            for: 5m
+            labels: { severity: avertissement }
+            annotations:
+                summary: '{{ $labels.job }} {{ $labels.env }} lent'
+                description: '{{ $labels.instance }} répond en plus de 2 s depuis 5 minutes.'
+
+          - alert: ObjectifDisponibiliteMenace
+            expr: avg_over_time(probe_success{env="production"}[24h]) < 0.995
+            for: 10m
+            labels: { severity: avertissement }
+            annotations:
+                summary: 'Objectif de disponibilité menacé ({{ $labels.job }})'
+                description: 'Disponibilité sur 24 h inférieure à l''objectif de 99,5 %.'
+
+          - alert: CertificatExpireBientot
+            expr: (probe_ssl_earliest_cert_expiry - time()) / 86400 < 14
+            for: 1h
+            labels: { severity: avertissement }
+            annotations:
+                summary: 'Certificat HTTPS {{ $labels.env }} bientôt expiré'
+                description: 'Le certificat de {{ $labels.instance }} expire dans moins de 14 jours.'
+
+    - name: serveur
+      rules:
+          - alert: DisqueBientotPlein
+            expr: 1 - node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} > 0.85
+            for: 10m
+            labels: { severity: avertissement }
+            annotations:
+                summary: 'Disque du serveur rempli à plus de 85 %'
+                description: 'Espace disque bientôt épuisé.'
+
+          - alert: MemoireSaturee
+            expr: 1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes > 0.9
+            for: 10m
+            labels: { severity: avertissement }
+            annotations:
+                summary: 'Mémoire du serveur utilisée à plus de 90 %'
+                description: 'Risque de lenteurs ou d''arrêt de conteneurs.'
+
+          - alert: ProcesseurSature
+            expr: 1 - avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) > 0.9
+            for: 10m
+            labels: { severity: avertissement }
+            annotations:
+                summary: 'Processeur du serveur utilisé à plus de 90 %'
+                description: 'Charge CPU anormalement élevée depuis 10 minutes.'

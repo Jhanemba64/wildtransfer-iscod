@@ -2,12 +2,14 @@
 # Prépare et sécurise un serveur Ubuntu (22.04 / 24.04) pour WildTransfer. Idempotent : peut être relancé.
 # Lancé automatiquement par cloud-init sur un nouveau serveur, ou à la main (en root) :
 #   DOMAIN=wildtransfer.cloud ACME_EMAIL=moi@exemple.com ./provision.sh
-# Options : STAGING_DOMAIN (environnement de test sur le même serveur), ADMIN_IP (jamais banni),
+# Options : STAGING_DOMAIN (environnement de test sur le même serveur), MONITORING_DOMAIN (Grafana),
+#           ADMIN_IP (jamais banni),
 #           BACKUP_S3_URL (copie des sauvegardes hors serveur).
 set -euo pipefail
 
 : "${DOMAIN:?DOMAIN requis}"
 STAGING_DOMAIN=${STAGING_DOMAIN:-}
+MONITORING_DOMAIN=${MONITORING_DOMAIN:-}
 ACME_EMAIL=${ACME_EMAIL:-}
 ADMIN_IP=${ADMIN_IP:-}
 BACKUP_S3_URL=${BACKUP_S3_URL:-}
@@ -61,7 +63,7 @@ install -m 644 "$CONF_DIR/nginx/security.conf" /etc/nginx/conf.d/security.conf
 sed -i 's/ssl_protocols .*/ssl_protocols TLSv1.2 TLSv1.3;/' /etc/nginx/nginx.conf
 rm -f /etc/nginx/sites-enabled/default
 
-# Un vhost par environnement : production (port 7007) et, si demandé, staging (port 7008)
+# Un vhost par service : production (7007) et, si demandés, staging (7008) et supervision Grafana (3003)
 site() {
     local name=$1 domain=$2 port=$3
     # '$DOMAIN $APP_PORT' est la liste des variables à substituer, pas une expansion
@@ -75,6 +77,10 @@ site wildtransfer "$DOMAIN" 7007
 if [ -n "$STAGING_DOMAIN" ]; then
     site wildtransfer-staging "$STAGING_DOMAIN" 7008
     DOMAINS+=("$STAGING_DOMAIN")
+fi
+if [ -n "$MONITORING_DOMAIN" ]; then
+    site wildtransfer-monitoring "$MONITORING_DOMAIN" 3003
+    DOMAINS+=("$MONITORING_DOMAIN")
 fi
 nginx -t
 systemctl reload nginx
