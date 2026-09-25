@@ -1,0 +1,44 @@
+name: CI Infrastructure
+
+on:
+    workflow_dispatch:
+    push:
+        paths:
+            - 'infra/**'
+            - '.github/workflows/infra.yml'
+    pull_request:
+        paths:
+            - 'infra/**'
+
+jobs:
+    terraform:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: infra/terraform
+        steps:
+            - uses: actions/checkout@v4
+            - uses: hashicorp/setup-terraform@v3
+            - name: Format
+              run: terraform fmt -check -recursive
+            - name: Init (sans backend)
+              run: terraform init -backend=false
+            - name: Validate
+              run: terraform validate
+
+    scripts:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: ShellCheck
+              run: shellcheck infra/scripts/*.sh
+            - name: Compose de production valide
+              run: |
+                  cp infra/app/backend.env.example infra/app/backend.env
+                  cp infra/app/storage-api.env.example infra/app/storage-api.env
+                  docker compose -f infra/app/docker-compose.yml config --quiet
+            - name: Configuration nginx valide
+              run: |
+                  docker run --rm -v "$PWD/infra/app/nginx.conf:/etc/nginx/nginx.conf:ro" \
+                      --add-host backend:127.0.0.1 --add-host storage-api:127.0.0.1 --add-host frontend:127.0.0.1 \
+                      nginx nginx -t

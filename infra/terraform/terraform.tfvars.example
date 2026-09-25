@@ -1,0 +1,6 @@
+# Copier en terraform.tfvars (non versionné) et adapter
+domain     = "wildtransfer.cloud"
+acme_email = "moi@exemple.com"
+admin_ip   = "203.0.113.10"
+# region = "GRA11"
+# flavor = "d2-4"

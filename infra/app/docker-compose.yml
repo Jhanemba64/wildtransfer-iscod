@@ -1,0 +1,64 @@
+# Stack de production WildTransfer : images publiées sur Docker Hub, déployée par infra/scripts/deploy.sh.
+# Aucun port exposé publiquement : tout passe par le nginx de l'hôte (127.0.0.1:7007).
+services:
+    db:
+        image: postgres:18
+        restart: unless-stopped
+        environment:
+            POSTGRES_DB: postgres
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: example # imposé par backend/src/db.ts ; la base n'est joignable que sur le réseau interne
+        healthcheck:
+            test: ['CMD-SHELL', 'pg_isready -d postgres -U postgres']
+            interval: 1s
+            timeout: 10s
+            retries: 50
+
+    backend:
+        image: pierrick64/wildtransfer-backend:latest
+        restart: unless-stopped
+        env_file: ./backend.env
+        healthcheck:
+            test: 'curl --fail --request POST --header ''content-type: application/json'' --url ''http://localhost:4000'' --data ''{"query":"query { __typename }"}'' || exit 1'
+            interval: 1s
+            timeout: 10s
+            retries: 100
+        depends_on:
+            db:
+                condition: service_healthy
+
+    frontend:
+        image: pierrick64/wildtransfer-frontend:latest
+        restart: unless-stopped
+        healthcheck:
+            test: "curl --fail --request GET --url 'http://localhost' || exit 1"
+            interval: 1s
+            timeout: 10s
+            retries: 100
+        depends_on:
+            backend:
+                condition: service_healthy
+
+    storage-api:
+        image: pierrick64/wildtransfer-storage-api:latest
+        restart: unless-stopped
+        env_file: ./storage-api.env
+        healthcheck:
+            test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 15s
+
+    api_gateway:
+        image: nginx
+        restart: unless-stopped
+        volumes:
+            - ./nginx.conf:/etc/nginx/nginx.conf:ro
+        depends_on:
+            backend:
+                condition: service_healthy
+            frontend:
+                condition: service_healthy
+        ports:
+            - 127.0.0.1:7007:80

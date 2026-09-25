@@ -1,0 +1,23 @@
+# fail2ban WildTransfer (@ADMIN_IP@ est remplacé par provision.sh)
+[DEFAULT]
+ignoreip = 127.0.0.1/8 ::1 @ADMIN_IP@
+bantime = 1h
+findtime = 10m
+maxretry = 5
+banaction = ufw
+
+[sshd]
+enabled = true
+
+[nginx-limit-req]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/error.log
+findtime = 1m
+maxretry = 10
+bantime = 10m
+
+[nginx-http-auth]
+enabled = true
+port = http,https
+logpath = /var/log/nginx/error.log

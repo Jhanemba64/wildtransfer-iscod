@@ -1,0 +1,2 @@
+# Scripts et configurations exécutés sous Linux : toujours en LF
+infra/** text eol=lf

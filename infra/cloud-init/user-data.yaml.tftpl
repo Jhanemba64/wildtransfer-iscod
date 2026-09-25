@@ -1,0 +1,23 @@
+#cloud-config
+# Premier démarrage d'un serveur WildTransfer (rendu par Terraform, voir infra/terraform/main.tf)
+ssh_pwauth: false
+package_update: true
+package_upgrade: true
+
+write_files:
+  - path: /opt/wildtransfer-infra/scripts/provision.sh
+    permissions: "0755"
+    encoding: b64
+    content: ${provision_sh}
+  - path: /opt/wildtransfer-infra/config/nginx/security.conf
+    encoding: b64
+    content: ${nginx_security}
+  - path: /opt/wildtransfer-infra/config/nginx/wildtransfer.conf.template
+    encoding: b64
+    content: ${nginx_site}
+  - path: /opt/wildtransfer-infra/config/fail2ban/jail.local
+    encoding: b64
+    content: ${fail2ban_jail}
+
+runcmd:
+  - [bash, -c, "DOMAIN='${domain}' ACME_EMAIL='${acme_email}' ADMIN_IP='${admin_ip}' /opt/wildtransfer-infra/scripts/provision.sh > /var/log/wildtransfer-provision.log 2>&1"]
