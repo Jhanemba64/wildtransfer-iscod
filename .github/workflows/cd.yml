@@ -1,0 +1,81 @@
+name: Déploiement continu (staging)
+
+# À chaque push : tests, puis images Docker taguées par commit, puis déploiement automatique
+# sur l'environnement de test (staging), vérifié par un test de fumée.
+on:
+    push:
+        branches: [dev, bloc2-conteneurs-ci-cd]
+        paths:
+            - 'frontend/**'
+            - 'backend/**'
+            - 'storage-api/**'
+            - 'infra/app/**'
+            - 'infra/scripts/deploy.sh'
+            - '.github/workflows/cd.yml'
+    workflow_dispatch:
+
+concurrency:
+    group: staging
+    cancel-in-progress: false
+
+jobs:
+    tests:
+        runs-on: ubuntu-latest
+        outputs:
+            tag: ${{ steps.tag.outputs.tag }}
+        steps:
+            - uses: actions/checkout@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: lts/*
+            - name: Version des images (tag = commit)
+              id: tag
+              run: echo "tag=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+            - name: Tests unitaires backend
+              run: cd backend && npm ci && npm test
+            - name: Tests unitaires frontend
+              run: cd frontend && npm ci && npm run test:run
+
+    build:
+        needs: tests
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                service: [frontend, backend, storage-api]
+        steps:
+            - uses: actions/checkout@v4
+            - uses: docker/login-action@v3
+              with:
+                  username: ${{ secrets.DOCKERHUB_USERNAME }}
+                  password: ${{ secrets.DOCKERHUB_TOKEN }}
+            - uses: docker/setup-buildx-action@v3
+            - uses: docker/build-push-action@v6
+              with:
+                  context: ./${{ matrix.service }}
+                  file: ./${{ matrix.service }}/Dockerfile.prod
+                  platforms: linux/amd64
+                  push: true
+                  tags: |
+                      ${{ secrets.DOCKERHUB_USERNAME }}/wildtransfer-${{ matrix.service }}:${{ needs.tests.outputs.tag }}
+                      ${{ secrets.DOCKERHUB_USERNAME }}/wildtransfer-${{ matrix.service }}:staging
+
+    deploy-staging:
+        needs: [tests, build]
+        runs-on: ubuntu-latest
+        environment:
+            name: staging
+            url: ${{ vars.STAGING_URL }}
+        steps:
+            - uses: actions/checkout@v4
+            - name: Accès SSH au serveur
+              run: |
+                  mkdir -p ~/.ssh && chmod 700 ~/.ssh
+                  echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+                  echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+            - name: Déploiement sur le staging
+              env:
+                  APP_ENV: staging
+                  IMAGE_TAG: ${{ needs.tests.outputs.tag }}
+              run: ./infra/scripts/deploy.sh "ubuntu@${{ vars.DEPLOY_HOST }}"
+            - name: Test de fumée
+              run: ./infra/scripts/smoke-test.sh "${{ vars.STAGING_URL }}"

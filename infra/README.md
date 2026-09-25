@@ -68,3 +68,41 @@ format et validité Terraform, ShellCheck sur les scripts, compose et configurat
 
 Le workflow manuel `.github/workflows/images.yml` construit les 3 images depuis une branche et les publie
 sous un tag dédié (ex. `iscod`). Le tag `latest` est réservé à la production OVH et refusé.
+
+## Environnements
+
+| Environnement | Adresse | Dossier serveur | Port interne | Secrets locaux |
+|---|---|---|---|---|
+| Production | https://52-47-201-60.sslip.io | `/opt/wildtransfer` | 7007 | `app/backend.env`, `app/storage-api.env` |
+| Staging (test) | https://staging.52-47-201-60.sslip.io | `/opt/wildtransfer-staging` | 7008 | `app/backend.staging.env`, `app/storage-api.staging.env` |
+
+Chaque environnement a sa propre base, ses propres fichiers (volumes Docker) et ses propres secrets.
+
+```bash
+APP_ENV=staging IMAGE_TAG=sha-1a2b3c4 ./infra/scripts/deploy.sh ubuntu@<serveur>
+```
+
+`deploy.sh` attend que tous les conteneurs soient sains ; sinon, il remet automatiquement la version précédente.
+
+## Sauvegardes
+
+Chaque nuit à 03h30 (`scripts/backup.sh`, installé par `provision.sh`) : dump de chaque base et archive des
+fichiers de chaque environnement dans `/var/backups/wildtransfer` (14 jours), copie dans le bucket S3
+`wildtransfer-backups-<compte>` (30 jours). Ce bucket n'accepte que des dépôts, et seulement depuis l'IP du
+serveur : aucune clé AWS sur le serveur, et un serveur compromis ne peut ni lire ni effacer les sauvegardes.
+
+```bash
+# Restaurer la base de production depuis la dernière sauvegarde
+F=$(sudo sh -c "ls -t /var/backups/wildtransfer/wildtransfer-db-*.sql.gz | head -1")
+sudo gunzip -c "$F" | (cd /opt/wildtransfer && sudo docker compose exec -T db psql -q -U postgres)
+```
+
+## Déploiement continu et mise en production (GitHub Actions)
+
+| Workflow | Déclenchement | Étapes |
+|---|---|---|
+| `cd.yml` | Chaque push sur `dev` | Tests unitaires → images taguées par commit (`sha-xxxxxxx`) → déploiement staging → test de fumée |
+| `release.yml` | Manuel (« Mise en production ») | Version validée en staging → déploiement production → test de fumée → retour arrière automatique si échec |
+
+Secrets GitHub : `DEPLOY_SSH_KEY` (clé dédiée au déploiement), `DEPLOY_KNOWN_HOSTS`, `DOCKERHUB_*`.
+Variables : `DEPLOY_HOST`, `PROD_URL`, `STAGING_URL`.

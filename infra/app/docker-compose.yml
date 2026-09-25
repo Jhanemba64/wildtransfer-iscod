@@ -1,6 +1,15 @@
-# Stack de production WildTransfer : images publiées sur Docker Hub, déployée par infra/scripts/deploy.sh.
-# IMAGE_TAG (fichier .env écrit par deploy.sh) choisit la version des images ; latest par défaut.
-# Aucun port exposé publiquement : tout passe par le nginx de l'hôte (127.0.0.1:7007).
+# Stack WildTransfer (production ou staging) : images publiées sur Docker Hub, déployée par infra/scripts/deploy.sh.
+# Variables du fichier .env écrit par deploy.sh :
+#   IMAGE_TAG : version des images (tag = commit, ex. sha-1a2b3c4) · APP_PORT : 7007 (prod) ou 7008 (staging)
+# Aucun port exposé publiquement : tout passe par le nginx de l'hôte (127.0.0.1:APP_PORT).
+
+# Rotation des logs : 3 fichiers de 10 Mo maximum par conteneur
+x-logging: &logging
+    driver: json-file
+    options:
+        max-size: 10m
+        max-file: '3'
+
 services:
     db:
         image: postgres:18
@@ -11,11 +20,13 @@ services:
             POSTGRES_PASSWORD: example # imposé par backend/src/db.ts ; la base n'est joignable que sur le réseau interne
         healthcheck:
             test: ['CMD-SHELL', 'pg_isready -d postgres -U postgres']
-            interval: 1s
+            interval: 5s
             timeout: 10s
-            retries: 50
+            retries: 20
         volumes:
             - db-data:/var/lib/postgresql
+        mem_limit: 256m
+        logging: *logging
 
     backend:
         image: pierrick64/wildtransfer-backend:${IMAGE_TAG:-latest}
@@ -23,24 +34,28 @@ services:
         env_file: ./backend.env
         healthcheck:
             test: 'curl --fail --request POST --header ''content-type: application/json'' --url ''http://localhost:4000'' --data ''{"query":"query { __typename }"}'' || exit 1'
-            interval: 1s
+            interval: 5s
             timeout: 10s
-            retries: 100
+            retries: 30
         depends_on:
             db:
                 condition: service_healthy
+        mem_limit: 384m
+        logging: *logging
 
     frontend:
         image: pierrick64/wildtransfer-frontend:${IMAGE_TAG:-latest}
         restart: unless-stopped
         healthcheck:
             test: "curl --fail --request GET --url 'http://localhost' || exit 1"
-            interval: 1s
+            interval: 5s
             timeout: 10s
-            retries: 100
+            retries: 20
         depends_on:
             backend:
                 condition: service_healthy
+        mem_limit: 64m
+        logging: *logging
 
     storage-api:
         image: pierrick64/wildtransfer-storage-api:${IMAGE_TAG:-latest}
@@ -54,6 +69,8 @@ services:
             start_period: 15s
         volumes:
             - uploads:/app/uploads
+        mem_limit: 256m
+        logging: *logging
 
     api_gateway:
         image: nginx
@@ -66,7 +83,9 @@ services:
             frontend:
                 condition: service_healthy
         ports:
-            - 127.0.0.1:7007:80
+            - 127.0.0.1:${APP_PORT:-7007}:80
+        mem_limit: 64m
+        logging: *logging
 
 # Données persistantes : survivent aux mises à jour et redémarrages
 volumes:

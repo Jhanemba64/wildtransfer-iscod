@@ -9,6 +9,10 @@ write_files:
     permissions: "0755"
     encoding: b64
     content: ${provision_sh}
+  - path: /opt/wildtransfer-infra/scripts/backup.sh
+    permissions: "0700"
+    encoding: b64
+    content: ${backup_sh}
   - path: /opt/wildtransfer-infra/config/nginx/security.conf
     encoding: b64
     content: ${nginx_security}
@@ -20,4 +24,4 @@ write_files:
     content: ${fail2ban_jail}
 
 runcmd:
-  - [bash, -c, "DOMAIN='${domain}' ACME_EMAIL='${acme_email}' ADMIN_IP='${admin_ip}' /opt/wildtransfer-infra/scripts/provision.sh > /var/log/wildtransfer-provision.log 2>&1"]
+  - [bash, -c, "DOMAIN='${domain}' STAGING_DOMAIN='${staging_domain}' ACME_EMAIL='${acme_email}' ADMIN_IP='${admin_ip}' BACKUP_S3_URL='${backup_s3_url}' /opt/wildtransfer-infra/scripts/provision.sh > /var/log/wildtransfer-provision.log 2>&1"]

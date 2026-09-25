@@ -44,7 +44,8 @@ resource "aws_eip" "server" {
 }
 
 locals {
-  domain = var.domain != "" ? var.domain : "${replace(aws_eip.server.public_ip, ".", "-")}.sslip.io"
+  domain         = var.domain != "" ? var.domain : "${replace(aws_eip.server.public_ip, ".", "-")}.sslip.io"
+  staging_domain = "staging.${local.domain}" # environnement de test, même serveur
 }
 
 resource "aws_instance" "server" {
@@ -67,13 +68,22 @@ resource "aws_instance" "server" {
   # Premier démarrage : cloud-init dépose les scripts d'infra et lance provision.sh
   user_data = templatefile("${path.module}/../cloud-init/user-data.yaml.tftpl", {
     domain         = local.domain
+    staging_domain = local.staging_domain
     acme_email     = var.acme_email
     admin_ip       = var.admin_ip
+    backup_s3_url  = "https://${aws_s3_bucket.backups.bucket_regional_domain_name}"
     provision_sh   = filebase64("${path.module}/../scripts/provision.sh")
+    backup_sh      = filebase64("${path.module}/../scripts/backup.sh")
     nginx_security = filebase64("${path.module}/../config/nginx/security.conf")
     nginx_site     = filebase64("${path.module}/../config/nginx/wildtransfer.conf.template")
     fail2ban_jail  = filebase64("${path.module}/../config/fail2ban/jail.local")
   })
+
+  # user_data ne sert qu'à la création : les évolutions sont appliquées en relançant provision.sh,
+  # sans recréer ni redémarrer le serveur
+  lifecycle {
+    ignore_changes = [user_data]
+  }
 
   tags = { Name = var.name }
 }

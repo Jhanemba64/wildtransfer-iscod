@@ -1,0 +1,65 @@
+name: Mise en production
+
+# Promotion en production de la version validée sur le staging (ou d'une version précise).
+# La production est vérifiée après déploiement ; en cas d'échec, la version précédente est remise en place.
+on:
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: 'Version à déployer (ex. sha-1a2b3c4). Vide : la version actuellement en staging'
+                required: false
+                default: ''
+
+concurrency:
+    group: production
+    cancel-in-progress: false
+
+jobs:
+    release:
+        runs-on: ubuntu-latest
+        environment:
+            name: production
+            url: ${{ vars.PROD_URL }}
+        steps:
+            - uses: actions/checkout@v4
+
+            - name: Accès SSH au serveur
+              run: |
+                  mkdir -p ~/.ssh && chmod 700 ~/.ssh
+                  echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/id_ed25519 && chmod 600 ~/.ssh/id_ed25519
+                  echo "${{ secrets.DEPLOY_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+            - name: Choix de la version
+              id: version
+              env:
+                  INPUT_TAG: ${{ inputs.tag }}
+                  HOST: ubuntu@${{ vars.DEPLOY_HOST }}
+              run: |
+                  read_tag() { ssh "$HOST" "sed -n 's/^IMAGE_TAG=//p' $1/.env"; }
+                  TAG=${INPUT_TAG:-$(read_tag /opt/wildtransfer-staging)}
+                  [[ "$TAG" =~ ^[a-zA-Z0-9._-]+$ ]] || { echo "Version invalide : $TAG"; exit 1; }
+                  echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+                  echo "previous=$(read_tag /opt/wildtransfer)" >> "$GITHUB_OUTPUT"
+                  echo "Mise en production de $TAG (actuellement en production : $(read_tag /opt/wildtransfer))"
+
+            - name: La version fonctionne en staging
+              if: inputs.tag == ''
+              run: ./infra/scripts/smoke-test.sh "${{ vars.STAGING_URL }}"
+
+            - name: Déploiement en production
+              env:
+                  APP_ENV: production
+                  IMAGE_TAG: ${{ steps.version.outputs.tag }}
+              run: ./infra/scripts/deploy.sh "ubuntu@${{ vars.DEPLOY_HOST }}"
+
+            - name: Test de fumée en production
+              run: ./infra/scripts/smoke-test.sh "${{ vars.PROD_URL }}"
+
+            - name: Retour arrière si la production ne répond pas
+              if: failure() && steps.version.outputs.previous != ''
+              env:
+                  APP_ENV: production
+                  IMAGE_TAG: ${{ steps.version.outputs.previous }}
+              run: |
+                  echo "Retour à la version $IMAGE_TAG"
+                  ./infra/scripts/deploy.sh "ubuntu@${{ vars.DEPLOY_HOST }}"
