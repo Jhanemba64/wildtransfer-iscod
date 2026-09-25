@@ -1,4 +1,5 @@
 # Stack de production WildTransfer : images publiées sur Docker Hub, déployée par infra/scripts/deploy.sh.
+# IMAGE_TAG (fichier .env écrit par deploy.sh) choisit la version des images ; latest par défaut.
 # Aucun port exposé publiquement : tout passe par le nginx de l'hôte (127.0.0.1:7007).
 services:
     db:
@@ -13,9 +14,11 @@ services:
             interval: 1s
             timeout: 10s
             retries: 50
+        volumes:
+            - db-data:/var/lib/postgresql
 
     backend:
-        image: pierrick64/wildtransfer-backend:latest
+        image: pierrick64/wildtransfer-backend:${IMAGE_TAG:-latest}
         restart: unless-stopped
         env_file: ./backend.env
         healthcheck:
@@ -28,7 +31,7 @@ services:
                 condition: service_healthy
 
     frontend:
-        image: pierrick64/wildtransfer-frontend:latest
+        image: pierrick64/wildtransfer-frontend:${IMAGE_TAG:-latest}
         restart: unless-stopped
         healthcheck:
             test: "curl --fail --request GET --url 'http://localhost' || exit 1"
@@ -40,7 +43,7 @@ services:
                 condition: service_healthy
 
     storage-api:
-        image: pierrick64/wildtransfer-storage-api:latest
+        image: pierrick64/wildtransfer-storage-api:${IMAGE_TAG:-latest}
         restart: unless-stopped
         env_file: ./storage-api.env
         healthcheck:
@@ -49,6 +52,8 @@ services:
             timeout: 5s
             retries: 5
             start_period: 15s
+        volumes:
+            - uploads:/app/uploads
 
     api_gateway:
         image: nginx
@@ -62,3 +67,8 @@ services:
                 condition: service_healthy
         ports:
             - 127.0.0.1:7007:80
+
+# Données persistantes : survivent aux mises à jour et redémarrages
+volumes:
+    db-data:
+    uploads:

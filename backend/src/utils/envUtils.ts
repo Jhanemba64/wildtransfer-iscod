@@ -1,4 +1,6 @@
 export function getDomain(): string {
+    if (process.env.APP_URL) return process.env.APP_URL;
+
     const env = process.env.NODE_ENV;
     
     switch (env) {

@@ -1,40 +1,72 @@
-resource "openstack_compute_keypair_v2" "admin" {
-  name       = "${var.name}-admin"
+# Ubuntu 22.04 officielle (éditeur Canonical)
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"]
+
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-*"]
+  }
+}
+
+resource "aws_key_pair" "admin" {
+  key_name   = "${var.name}-admin"
   public_key = file(pathexpand(var.ssh_public_key_path))
 }
 
 # Pare-feu cloud : seuls SSH, HTTP et HTTPS sont ouverts (doublé par UFW sur le serveur)
-resource "openstack_networking_secgroup_v2" "web" {
+resource "aws_security_group" "web" {
   name        = "${var.name}-web"
   description = "WildTransfer : SSH, HTTP, HTTPS"
+
+  dynamic "ingress" {
+    for_each = [22, 80, 443]
+    content {
+      from_port   = ingress.value
+      to_port     = ingress.value
+      protocol    = "tcp"
+      cidr_blocks = ["0.0.0.0/0"]
+    }
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
 }
 
-resource "openstack_networking_secgroup_rule_v2" "ingress" {
-  for_each = toset(["22", "80", "443"])
-
-  security_group_id = openstack_networking_secgroup_v2.web.id
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = tonumber(each.value)
-  port_range_max    = tonumber(each.value)
-  remote_ip_prefix  = "0.0.0.0/0"
+# IP publique fixe, connue avant le démarrage : sert aussi au nom <ip>.sslip.io
+resource "aws_eip" "server" {
+  domain = "vpc"
+  tags   = { Name = var.name }
 }
 
-resource "openstack_compute_instance_v2" "server" {
-  name            = var.name
-  image_name      = var.image
-  flavor_name     = var.flavor
-  key_pair        = openstack_compute_keypair_v2.admin.name
-  security_groups = [openstack_networking_secgroup_v2.web.name]
+locals {
+  domain = var.domain != "" ? var.domain : "${replace(aws_eip.server.public_ip, ".", "-")}.sslip.io"
+}
 
-  network {
-    name = "Ext-Net"
+resource "aws_instance" "server" {
+  ami                    = data.aws_ami.ubuntu.id
+  instance_type          = var.instance_type
+  key_name               = aws_key_pair.admin.key_name
+  vpc_security_group_ids = [aws_security_group.web.id]
+
+  root_block_device {
+    volume_size = 20
+    volume_type = "gp3"
+    encrypted   = true
+  }
+
+  # IMDSv2 obligatoire : protège les métadonnées de l'instance
+  metadata_options {
+    http_tokens = "required"
   }
 
   # Premier démarrage : cloud-init dépose les scripts d'infra et lance provision.sh
   user_data = templatefile("${path.module}/../cloud-init/user-data.yaml.tftpl", {
-    domain         = var.domain
+    domain         = local.domain
     acme_email     = var.acme_email
     admin_ip       = var.admin_ip
     provision_sh   = filebase64("${path.module}/../scripts/provision.sh")
@@ -42,4 +74,11 @@ resource "openstack_compute_instance_v2" "server" {
     nginx_site     = filebase64("${path.module}/../config/nginx/wildtransfer.conf.template")
     fail2ban_jail  = filebase64("${path.module}/../config/fail2ban/jail.local")
   })
+
+  tags = { Name = var.name }
+}
+
+resource "aws_eip_association" "server" {
+  instance_id   = aws_instance.server.id
+  allocation_id = aws_eip.server.id
 }

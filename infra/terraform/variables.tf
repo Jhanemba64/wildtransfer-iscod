@@ -5,21 +5,15 @@ variable "name" {
 }
 
 variable "region" {
-  description = "Région OVHcloud Public Cloud"
+  description = "Région AWS"
   type        = string
-  default     = "GRA11"
+  default     = "eu-west-3" # Paris
 }
 
-variable "flavor" {
-  description = "Gabarit de l'instance (d2-4 : 2 vCPU, 4 Go RAM)"
+variable "instance_type" {
+  description = "Type d'instance EC2 (t3.small : 2 vCPU, 2 Go RAM)"
   type        = string
-  default     = "d2-4"
-}
-
-variable "image" {
-  description = "Image système"
-  type        = string
-  default     = "Ubuntu 22.04"
+  default     = "t3.small"
 }
 
 variable "ssh_public_key_path" {
@@ -29,8 +23,9 @@ variable "ssh_public_key_path" {
 }
 
 variable "domain" {
-  description = "Nom de domaine de l'application (enregistrement DNS A vers l'IP du serveur)"
+  description = "Nom de domaine de l'application. Vide : <ip>.sslip.io, utilisable sans DNS"
   type        = string
+  default     = ""
 }
 
 variable "acme_email" {
