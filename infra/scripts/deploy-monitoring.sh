@@ -11,8 +11,11 @@ MON_DIR="$(cd "$(dirname "$0")/../monitoring" && pwd)"
 REMOTE_DIR=/opt/wildtransfer-monitoring
 
 [ -f "$MON_DIR/monitoring.env" ] || { echo "Manquant : infra/monitoring/monitoring.env (partir de monitoring.env.example)"; exit 1; }
+set -a
+# Fichier de secrets local, absent du dépôt
 # shellcheck disable=SC1091
-set -a; . "$MON_DIR/monitoring.env"; set +a
+. "$MON_DIR/monitoring.env"
+set +a
 : "${GRAFANA_ADMIN_PASSWORD:?}" "${GRAFANA_URL:?}" "${ALERT_EMAIL:?}" "${SMTP_PASSWORD:?}"
 
 TMP=$(mktemp -d)
