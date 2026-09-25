@@ -1,5 +1,14 @@
 terraform {
-  required_version = ">= 1.5"
+  required_version = ">= 1.10"
+
+  # État partagé dans S3 (versionné, chiffré, privé), avec verrou contre les modifications simultanées
+  backend "s3" {
+    bucket       = "wildtransfer-tfstate-971598352115"
+    key          = "wildtransfer/terraform.tfstate"
+    region       = "eu-west-3"
+    encrypt      = true
+    use_lockfile = true
+  }
 
   required_providers {
     aws = {

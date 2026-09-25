@@ -29,6 +29,20 @@ cd ../..
 IMAGE_TAG=iscod ./infra/scripts/deploy.sh ubuntu@<ipv4>
 ```
 
+## État Terraform partagé (S3)
+
+L'état (ce que Terraform a réellement créé) n'est ni sur un poste ni dans git : il est stocké dans le bucket
+S3 `wildtransfer-tfstate-971598352115` (Paris), **versionné, chiffré et privé**, avec un verrou qui empêche
+deux `terraform apply` simultanés (`use_lockfile`). Le bucket se crée une seule fois, avant le premier `init` :
+
+```bash
+B=wildtransfer-tfstate-971598352115
+aws s3api create-bucket --bucket $B --region eu-west-3 --create-bucket-configuration LocationConstraint=eu-west-3
+aws s3api put-bucket-versioning --bucket $B --versioning-configuration Status=Enabled
+aws s3api put-public-access-block --bucket $B --public-access-block-configuration \
+    BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true
+```
+
 Le serveur existant peut aussi être (re)provisionné sans Terraform :
 
 ```bash
