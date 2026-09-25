@@ -10,9 +10,8 @@ import React from 'react';
 const getApiUri = () => {
     switch (import.meta.env.VITE_ENVIRONMENT) {
         case "PROD":
-            return "https://wildtransfer.cloud/api";
         case "STAGING":
-            return "https://staging.wildtransfer.cloud/api";
+            return "/api"; // même domaine que la page, quel que soit le serveur
         case "DEV":
             return "http://localhost:7007/api";
         default:

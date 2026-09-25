@@ -23,7 +23,7 @@ COPY tsconfig.node.json tsconfig.node.json
 COPY vite.config.ts vite.config.ts
 
 # Variables Vite injectées au build (passées en --build-arg)
-ARG VITE_ENVIRONMENT=production
+ARG VITE_ENVIRONMENT=PROD
 ARG VITE_STRIPE_PUBLISHABLE_KEY
 ENV VITE_ENVIRONMENT=$VITE_ENVIRONMENT VITE_STRIPE_PUBLISHABLE_KEY=$VITE_STRIPE_PUBLISHABLE_KEY
 
