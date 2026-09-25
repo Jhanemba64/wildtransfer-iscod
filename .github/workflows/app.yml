@@ -20,6 +20,7 @@ jobs:
                   echo "JWT_SECRET_KEY=ci-test-secret-key" >> .env
                   echo "RESEND_API_KEY=test-api-key" >> .env
                   echo "RESEND_EMAIL_DOMAIN=resend.dev" >> .env
+                  echo "JWT_SECRET_KEY=ci-test-secret-key" > ../storage-api/.env
 
             - name: Set up Docker
               run: |
