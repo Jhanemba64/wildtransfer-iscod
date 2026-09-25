@@ -73,8 +73,8 @@ sous un tag dédié (ex. `iscod`). Le tag `latest` (ancienne production OVH) est
 
 | Environnement | Adresse | Dossier serveur | Port interne | Secrets locaux |
 |---|---|---|---|---|
-| Production | https://52-47-201-60.sslip.io | `/opt/wildtransfer` | 7007 | `app/backend.env`, `app/storage-api.env` |
-| Staging (test) | https://staging.52-47-201-60.sslip.io | `/opt/wildtransfer-staging` | 7008 | `app/backend.staging.env`, `app/storage-api.staging.env` |
+| Production | https://wildtransfer.fr | `/opt/wildtransfer` | 7007 | `app/backend.env`, `app/storage-api.env` |
+| Staging (test) | https://staging.wildtransfer.fr | `/opt/wildtransfer-staging` | 7008 | `app/backend.staging.env`, `app/storage-api.staging.env` |
 
 Chaque environnement a sa propre base, ses propres fichiers (volumes Docker) et ses propres secrets.
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Test de fumée après déploiement : le site et l'API GraphQL doivent répondre 200.
-# Usage : ./infra/scripts/smoke-test.sh https://52-47-201-60.sslip.io
+# Usage : ./infra/scripts/smoke-test.sh https://wildtransfer.fr
 set -euo pipefail
 
 URL=${1:?usage : smoke-test.sh https://<domaine>}

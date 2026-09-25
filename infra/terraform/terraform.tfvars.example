@@ -1,6 +1,6 @@
 # Copier en terraform.tfvars (non versionné) et adapter
 acme_email = "moi@exemple.com"
 admin_ip   = "203.0.113.10"
-# domain        = "wildtransfer.cloud"   # vide : <ip>.sslip.io
+domain     = "wildtransfer.fr"   # vide : <ip>.sslip.io, sans DNS
 # region        = "eu-west-3"
 # instance_type = "t3.small"

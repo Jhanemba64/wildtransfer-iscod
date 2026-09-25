@@ -8,7 +8,7 @@
 | **Alertmanager** | Envoie un e-mail à chaque alerte, puis à sa résolution (SMTP Resend) |
 | **Grafana** | Tableau de bord « WildTransfer — Supervision », provisionné depuis `grafana/` |
 
-Accès : https://monitoring.52-47-201-60.sslip.io (identifiant `admin`). Tout le reste écoute sur `127.0.0.1`.
+Accès : https://monitoring.wildtransfer.fr (identifiant `admin`). Tout le reste écoute sur `127.0.0.1`.
 
 ## Statistiques de service (SLI) et objectifs (SLO)
 

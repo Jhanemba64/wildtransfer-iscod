@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Prépare et sécurise un serveur Ubuntu (22.04 / 24.04) pour WildTransfer. Idempotent : peut être relancé.
 # Lancé automatiquement par cloud-init sur un nouveau serveur, ou à la main (en root) :
-#   DOMAIN=wildtransfer.cloud ACME_EMAIL=moi@exemple.com ./provision.sh
-# Options : STAGING_DOMAIN (environnement de test sur le même serveur), MONITORING_DOMAIN (Grafana),
+#   DOMAIN=wildtransfer.fr ACME_EMAIL=moi@exemple.com ./provision.sh
+# Options : DOMAIN_ALIASES (autres noms de la production, ex. www.wildtransfer.fr),
+#           STAGING_DOMAIN (environnement de test sur le même serveur), MONITORING_DOMAIN (Grafana),
 #           ADMIN_IP (jamais banni),
 #           BACKUP_S3_URL (copie des sauvegardes hors serveur).
 set -euo pipefail
 
 : "${DOMAIN:?DOMAIN requis}"
+DOMAIN_ALIASES=${DOMAIN_ALIASES:-}
 STAGING_DOMAIN=${STAGING_DOMAIN:-}
 MONITORING_DOMAIN=${MONITORING_DOMAIN:-}
 ACME_EMAIL=${ACME_EMAIL:-}
@@ -72,8 +74,10 @@ site() {
         < "$CONF_DIR/nginx/wildtransfer.conf.template" > "/etc/nginx/sites-available/$name"
     ln -sf "../sites-available/$name" "/etc/nginx/sites-enabled/$name"
 }
-DOMAINS=("$DOMAIN")
-site wildtransfer "$DOMAIN" 7007
+# Chaque entrée de DOMAINS regroupe les noms d'un même certificat (séparés par des espaces)
+PROD_NAMES=$(echo "$DOMAIN $DOMAIN_ALIASES" | xargs)
+DOMAINS=("$PROD_NAMES")
+site wildtransfer "$PROD_NAMES" 7007
 if [ -n "$STAGING_DOMAIN" ]; then
     site wildtransfer-staging "$STAGING_DOMAIN" 7008
     DOMAINS+=("$STAGING_DOMAIN")
@@ -87,9 +91,14 @@ systemctl reload nginx
 
 echo "==> HTTPS Let's Encrypt"
 if [ -n "$ACME_EMAIL" ]; then
-    for d in "${DOMAINS[@]}"; do
-        certbot --nginx -d "$d" -m "$ACME_EMAIL" --agree-tos --non-interactive --redirect \
-            || echo "Certificat non obtenu pour $d (DNS pas encore propagé ?). Relancer : certbot --nginx -d $d"
+    for names in "${DOMAINS[@]}"; do
+        args=()
+        # Découpage volontaire de la liste de noms
+        # shellcheck disable=SC2086
+        for d in $names; do args+=(-d "$d"); done
+        certbot --nginx "${args[@]}" --cert-name "${names%% *}" --expand -m "$ACME_EMAIL" \
+            --agree-tos --non-interactive --redirect \
+            || echo "Certificat non obtenu pour $names (DNS pas encore propagé ?). Relancer provision.sh"
     done
 fi
 

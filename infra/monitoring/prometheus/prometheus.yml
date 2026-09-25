@@ -23,9 +23,9 @@ scrape_configs:
       metrics_path: /probe
       params: { module: [http_2xx] }
       static_configs:
-          - targets: ['https://52-47-201-60.sslip.io/']
+          - targets: ['https://wildtransfer.fr/']
             labels: { env: production }
-          - targets: ['https://staging.52-47-201-60.sslip.io/']
+          - targets: ['https://staging.wildtransfer.fr/']
             labels: { env: staging }
       relabel_configs: &blackbox
           - source_labels: [__address__]
@@ -40,8 +40,8 @@ scrape_configs:
       metrics_path: /probe
       params: { module: [graphql] }
       static_configs:
-          - targets: ['https://52-47-201-60.sslip.io/api']
+          - targets: ['https://wildtransfer.fr/api']
             labels: { env: production }
-          - targets: ['https://staging.52-47-201-60.sslip.io/api']
+          - targets: ['https://staging.wildtransfer.fr/api']
             labels: { env: staging }
       relabel_configs: *blackbox

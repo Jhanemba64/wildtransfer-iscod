@@ -4,7 +4,7 @@ WildTransfer is a secure file-sharing web application (React, GraphQL, Node.js, 
 This repository shows how it is **built, tested, deployed, secured and monitored** end to end,
 as part of the ISCOD DevOps training.
 
-**Live:** production https://52-47-201-60.sslip.io · staging https://staging.52-47-201-60.sslip.io
+**Live:** production https://wildtransfer.fr · staging https://staging.wildtransfer.fr
 
 ## Architecture
 
