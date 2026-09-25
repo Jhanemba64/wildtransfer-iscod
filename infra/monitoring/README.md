@@ -19,7 +19,7 @@ Accès : https://monitoring.52-47-201-60.sslip.io (identifiant `admin`). Tout le
 | **Validité HTTPS** | Jours avant expiration du certificat | **> 14 jours** en permanence |
 | **Santé du serveur** | Processeur, mémoire, disque | **< 90 %** processeur et mémoire, **< 85 %** disque |
 
-Services sondés : site et API de la production AWS, site et API du staging, site de la production OVHcloud.
+Services sondés : site et API de la production, site et API du staging (serveur AWS).
 
 ## Alertes (e-mail)
 

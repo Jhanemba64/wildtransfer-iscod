@@ -27,8 +27,6 @@ scrape_configs:
             labels: { env: production }
           - targets: ['https://staging.52-47-201-60.sslip.io/']
             labels: { env: staging }
-          - targets: ['https://wildtransfer.cloud/']
-            labels: { env: production-ovh }
       relabel_configs: &blackbox
           - source_labels: [__address__]
             target_label: __param_target

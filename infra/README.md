@@ -67,7 +67,7 @@ format et validité Terraform, ShellCheck sur les scripts, compose et configurat
 ## Images de l'application
 
 Le workflow manuel `.github/workflows/images.yml` construit les 3 images depuis une branche et les publie
-sous un tag dédié (ex. `iscod`). Le tag `latest` est réservé à la production OVH et refusé.
+sous un tag dédié (ex. `iscod`). Le tag `latest` (ancienne production OVH) est refusé.
 
 ## Environnements
 
@@ -109,7 +109,6 @@ Une branche = un environnement :
 
 Livrer : fusionner `dev` → `preprod`, vérifier le staging, puis fusionner `preprod` → `main`.
 `release.yml` peut aussi être lancé à la main pour déployer une version précise (retour à une version antérieure).
-Les anciens workflows de l'infrastructure OVH (préfixe `[OVH]`) ne se lancent plus qu'à la main.
 
 Secrets GitHub : `DEPLOY_SSH_KEY` (clé dédiée au déploiement), `DEPLOY_KNOWN_HOSTS`, `DOCKERHUB_*`.
 Variables : `DEPLOY_HOST`, `PROD_URL`, `STAGING_URL`.
