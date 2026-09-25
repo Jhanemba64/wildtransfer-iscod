@@ -7,7 +7,6 @@
     "compilerOptions": {
         "jsx": "react-jsx",
         "strict": true,
-        "baseUrl": ".",
         "paths": {
             "@/*": ["./src/*"],
             "@public/*": ["./public/*"]
