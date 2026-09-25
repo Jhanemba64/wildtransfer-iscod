@@ -1,8 +1,17 @@
 name: Mise en production
 
-# Promotion en production de la version validée sur le staging (ou d'une version précise).
+# Promotion en production de la version validée en préproduction (staging), à chaque push ou merge
+# sur main, ou à la main (bouton) pour une version précise.
 # La production est vérifiée après déploiement ; en cas d'échec, la version précédente est remise en place.
 on:
+    push:
+        branches: [main]
+        paths:
+            - 'frontend/**'
+            - 'backend/**'
+            - 'storage-api/**'
+            - 'infra/app/**'
+            - 'infra/scripts/deploy.sh'
     workflow_dispatch:
         inputs:
             tag:

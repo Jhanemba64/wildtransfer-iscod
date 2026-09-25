@@ -99,10 +99,17 @@ sudo gunzip -c "$F" | (cd /opt/wildtransfer && sudo docker compose exec -T db ps
 
 ## Déploiement continu et mise en production (GitHub Actions)
 
-| Workflow | Déclenchement | Étapes |
+Une branche = un environnement :
+
+| Branche | Rôle | Workflow déclenché |
 |---|---|---|
-| `cd.yml` | Chaque push sur `dev` | Tests unitaires → images taguées par commit (`sha-xxxxxxx`) → déploiement staging → test de fumée |
-| `release.yml` | Manuel (« Mise en production ») | Version validée en staging → déploiement production → test de fumée → retour arrière automatique si échec |
+| `dev` | Intégration | CI : tests unitaires, E2E (Chromium, Firefox, WebKit), infrastructure |
+| `preprod` | Préproduction | `cd.yml` : tests → images taguées par commit (`sha-xxxxxxx`) → déploiement staging → test de fumée |
+| `main` | Production | `release.yml` : version validée en préproduction → déploiement production → test de fumée → retour arrière automatique si échec |
+
+Livrer : fusionner `dev` → `preprod`, vérifier le staging, puis fusionner `preprod` → `main`.
+`release.yml` peut aussi être lancé à la main pour déployer une version précise (retour à une version antérieure).
+Les anciens workflows de l'infrastructure OVH (préfixe `[OVH]`) ne se lancent plus qu'à la main.
 
 Secrets GitHub : `DEPLOY_SSH_KEY` (clé dédiée au déploiement), `DEPLOY_KNOWN_HOSTS`, `DOCKERHUB_*`.
 Variables : `DEPLOY_HOST`, `PROD_URL`, `STAGING_URL`.

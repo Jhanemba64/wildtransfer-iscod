@@ -1,11 +1,9 @@
-name: Compile and push backend image
+name: "[OVH] Compile and push backend image"
 
+# Ancienne infrastructure OVH : lancement manuel uniquement (aucun déclenchement automatique)
 on:
-  pull_request:
-    types: [closed]
-    branches: ["dev"]
-    
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest

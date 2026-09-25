@@ -1,10 +1,7 @@
-name: Compile and push storage api image to production
+name: "[OVH] Compile and push storage api image to production"
 
+# Ancienne infrastructure OVH : lancement manuel uniquement (aucun déclenchement automatique)
 on:
-  pull_request:
-    types: [closed]
-    branches: ["main"]
-
   workflow_dispatch:
 
 jobs:

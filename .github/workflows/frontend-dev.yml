@@ -1,11 +1,7 @@
-name: Compile and push frontend image to dev
+name: "[OVH] Compile and push frontend image to dev"
 
+# Ancienne infrastructure OVH : lancement manuel uniquement (aucun déclenchement automatique)
 on:
-  push:
-    branches:
-      - dev
-    paths:
-      - 'frontend/**'
   workflow_dispatch:
 
 jobs:

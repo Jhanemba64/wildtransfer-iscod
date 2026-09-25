@@ -1,10 +1,10 @@
-name: Déploiement continu (staging)
+name: Déploiement continu (préproduction)
 
-# À chaque push : tests, puis images Docker taguées par commit, puis déploiement automatique
-# sur l'environnement de test (staging), vérifié par un test de fumée.
+# Chaque push sur preprod : tests, images Docker taguées par commit, déploiement automatique
+# sur l'environnement de préproduction (staging AWS), vérifié par un test de fumée.
 on:
     push:
-        branches: [dev, bloc2-conteneurs-ci-cd]
+        branches: [preprod]
         paths:
             - 'frontend/**'
             - 'backend/**'
