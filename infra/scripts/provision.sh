@@ -45,6 +45,8 @@ systemctl restart fail2ban
 echo "==> nginx : reverse proxy durci"
 install -m 644 "$CONF_DIR/nginx/security.conf" /etc/nginx/conf.d/security.conf
 sed -i 's/ssl_protocols .*/ssl_protocols TLSv1.2 TLSv1.3;/' /etc/nginx/nginx.conf
+# '$DOMAIN' est la liste des variables à substituer, pas une expansion
+# shellcheck disable=SC2016
 DOMAIN="$DOMAIN" envsubst '$DOMAIN' < "$CONF_DIR/nginx/wildtransfer.conf.template" \
     > /etc/nginx/sites-available/wildtransfer
 ln -sf ../sites-available/wildtransfer /etc/nginx/sites-enabled/wildtransfer

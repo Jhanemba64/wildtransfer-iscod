@@ -2,6 +2,8 @@
 # Déploie ou met à jour l'application sur un serveur préparé par provision.sh.
 # Usage (depuis la racine du dépôt) : ./infra/scripts/deploy.sh ubuntu@<serveur>
 # Pré-requis : infra/app/backend.env et infra/app/storage-api.env (copiés des *.env.example, non versionnés).
+# REMOTE_DIR est volontairement développé côté client dans les commandes ssh.
+# shellcheck disable=SC2029
 set -euo pipefail
 
 TARGET=${1:?usage : deploy.sh utilisateur@serveur}
