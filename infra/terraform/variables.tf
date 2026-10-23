@@ -11,7 +11,8 @@ variable "region" {
 }
 
 variable "instance_type" {
-  description = "Type d'instance EC2 (t3.small : 2 vCPU, 2 Go RAM)"
+  # Compte AWS en offre gratuite : seuls t3/t4g micro et small, c7i-flex.large et m7i-flex.large sont permis
+  description = "Type d'instance EC2 (t3.small : 2 vCPU, 2 Go RAM + 2 Go de swap ; k3s, 2 environnements et supervision y tiennent)"
   type        = string
   default     = "t3.small"
 }

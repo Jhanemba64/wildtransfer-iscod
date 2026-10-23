@@ -79,10 +79,11 @@ resource "aws_instance" "server" {
     fail2ban_jail  = filebase64("${path.module}/../config/fail2ban/jail.local")
   })
 
-  # user_data ne sert qu'à la création : les évolutions sont appliquées en relançant provision.sh,
-  # sans recréer ni redémarrer le serveur
+  # user_data et l'image ne servent qu'à la création : les évolutions sont appliquées en relançant
+  # provision.sh et par unattended-upgrades, sans recréer le serveur. Sans ami ici, chaque nouvelle
+  # image Ubuntu publiée par Canonical ferait détruire et recréer le serveur au prochain apply.
   lifecycle {
-    ignore_changes = [user_data]
+    ignore_changes = [user_data, ami]
   }
 
   tags = { Name = var.name }
