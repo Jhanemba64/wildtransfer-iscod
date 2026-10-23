@@ -10,6 +10,7 @@ on:
             - 'backend/**'
             - 'storage-api/**'
             - 'infra/app/**'
+            - 'infra/k8s/**'
             - 'infra/scripts/deploy.sh'
             - '.github/workflows/cd.yml'
     workflow_dispatch:

@@ -9,9 +9,9 @@ as part of the ISCOD DevOps training.
 ## Architecture
 
 ```
-GitHub ──► GitHub Actions ──► Docker Hub ──► AWS EC2 (Paris)
- push       tests, build,       versioned      ├── production  (5 containers)
-            deploy              images         ├── staging     (5 containers)
+GitHub ──► GitHub Actions ──► Docker Hub ──► AWS EC2 (Paris) ── Kubernetes (k3s)
+ push       tests, build,       versioned      ├── namespace wildtransfer          (production, 5 workloads)
+            deploy              images         ├── namespace wildtransfer-staging  (staging, same manifests)
                                                └── monitoring  (Prometheus, Grafana, Alertmanager)
 ```
 
@@ -20,11 +20,12 @@ GitHub ──► GitHub Actions ──► Docker Hub ──► AWS EC2 (Paris)
 | Area | How |
 |---|---|
 | **Infrastructure as code** | Terraform creates the EC2 instance, security group, Elastic IP and S3 buckets; remote state in S3 with locking |
-| **Server provisioning** | cloud-init runs `provision.sh`: Docker, UFW firewall, fail2ban, key-only SSH, hardened nginx, Let's Encrypt HTTPS |
+| **Server provisioning** | cloud-init runs `provision.sh`: k3s, UFW firewall, fail2ban, key-only SSH, hardened nginx, Let's Encrypt HTTPS |
+| **Orchestration** | Kubernetes (k3s) manifests with Kustomize: one namespace per environment, health probes, resource limits, rolling updates with zero downtime, NetworkPolicy isolating the database |
 | **Continuous deployment** | Every push: unit tests → Docker images tagged with the commit → automatic staging deployment → smoke test |
 | **Production release** | One-click GitHub Actions workflow promotes the version validated in staging, with automatic rollback |
 | **Testing** | Jest and Vitest unit tests; Playwright end-to-end tests on Chromium, Firefox and WebKit |
-| **Data** | Persistent Docker volumes, nightly database and file backups, off-site copy to a write-only S3 bucket, tested restore |
+| **Data** | Persistent volumes, nightly database and file backups, off-site copy to a write-only S3 bucket, tested restore |
 | **Monitoring** | Prometheus + blackbox probes + Grafana dashboard; SLO of 99.5 % availability over 30 days; email alerts via Alertmanager |
 
 ## Security highlights
@@ -42,7 +43,7 @@ GitHub ──► GitHub Actions ──► Docker Hub ──► AWS EC2 (Paris)
 | `frontend/`, `backend/`, `storage-api/` | Application code |
 | `infra/terraform/` | AWS infrastructure (Terraform) |
 | `infra/scripts/` | Provisioning, deployment, backup and smoke-test scripts |
-| `infra/app/` | Production / staging Docker Compose stack |
+| `infra/k8s/` | Kubernetes manifests (Kustomize base + production / staging overlays) |
 | `infra/monitoring/` | Monitoring stack and SLI/SLO definitions |
 | `.github/workflows/` | CI, continuous deployment (`cd.yml`) and release (`release.yml`) pipelines |
 

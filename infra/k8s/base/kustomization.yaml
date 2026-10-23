@@ -1,0 +1,22 @@
+# Application WildTransfer décrite pour Kubernetes (k3s). Une instance complète par environnement :
+# voir overlays/production et overlays/staging. Les versions d'images et les secrets sont ajoutés
+# au déploiement par infra/scripts/deploy.sh.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: wildtransfer
+
+resources:
+  - db.yaml
+  - backend.yaml
+  - storage-api.yaml
+  - frontend.yaml
+  - api-gateway.yaml
+
+# Le suffixe de hachage du nom fait redémarrer la passerelle à chaque modification de nginx.conf
+configMapGenerator:
+  - name: api-gateway-nginx
+    files:
+      - nginx.conf

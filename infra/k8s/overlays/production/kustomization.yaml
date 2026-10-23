@@ -1,0 +1,17 @@
+# Production : https://wildtransfer.fr → nginx de l'hôte (TLS) → NodePort 30007 → passerelle
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: wildtransfer
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+patches:
+  - target:
+      kind: Service
+      name: api-gateway
+    patch: |-
+      - op: add
+        path: /spec/ports/0/nodePort
+        value: 30007

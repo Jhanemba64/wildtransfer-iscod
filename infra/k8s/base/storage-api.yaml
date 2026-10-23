@@ -1,0 +1,78 @@
+# API de stockage des fichiers (Express + Multer). Fichiers uploadés sur un volume persistant.
+# Secrets : storage-api-env, généré par deploy.sh depuis infra/app/storage-api*.env
+apiVersion: v1
+kind: Service
+metadata:
+  name: storage-api
+spec:
+  selector:
+    app: storage-api
+  ports:
+    - port: 3000
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: uploads
+spec:
+  accessModes: [ReadWriteOnce]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-api
+spec:
+  replicas: 1
+  # Nœud unique : l'ancienne et la nouvelle version peuvent monter le même volume pendant la mise à jour
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: storage-api
+  template:
+    metadata:
+      labels:
+        app: storage-api
+    spec:
+      containers:
+        - name: storage-api
+          image: pierrick64/wildtransfer-storage-api
+          envFrom:
+            - secretRef:
+                name: storage-api-env
+          ports:
+            - containerPort: 3000
+          # Toute réponse HTTP < 500 : le service est en route (la racine renvoie 404)
+          readinessProbe:
+            exec:
+              command: &http
+                - node
+                - -e
+                - "fetch('http://localhost:3000').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: *http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 96Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: uploads
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: uploads

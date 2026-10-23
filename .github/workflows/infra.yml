@@ -32,14 +32,16 @@ jobs:
             - uses: actions/checkout@v4
             - name: ShellCheck
               run: shellcheck infra/scripts/*.sh
-            - name: Compose de production valide
+            - name: Manifestes Kubernetes valides (kustomize + kubeconform, schémas stricts)
               run: |
-                  cp infra/app/backend.env.example infra/app/backend.env
-                  cp infra/app/storage-api.env.example infra/app/storage-api.env
-                  docker compose -f infra/app/docker-compose.yml config --quiet
-            - name: Configuration nginx valide
+                  curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+                      | tar xz kubeconform
+                  for env in production staging; do
+                      kubectl kustomize "infra/k8s/overlays/$env" | ./kubeconform -strict -summary
+                  done
+            - name: Configuration nginx de la passerelle valide
               run: |
-                  docker run --rm -v "$PWD/infra/app/nginx.conf:/etc/nginx/nginx.conf:ro" \
+                  docker run --rm -v "$PWD/infra/k8s/base/nginx.conf:/etc/nginx/nginx.conf:ro" \
                       --add-host backend:127.0.0.1 --add-host storage-api:127.0.0.1 --add-host frontend:127.0.0.1 \
                       nginx nginx -t
 

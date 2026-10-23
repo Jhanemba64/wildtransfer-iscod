@@ -6,10 +6,11 @@ Tout ce qu'il faut pour recréer un serveur de production complet de zéro, dans
 |---|---|
 | `terraform/` | Crée le serveur sur AWS (instance EC2 chiffrée, clé SSH, groupe de sécurité, IP fixe) |
 | `cloud-init/` | Premier démarrage : dépose les scripts et lance le provisioning |
-| `scripts/provision.sh` | Installe Docker, nginx, certbot et sécurise le serveur (UFW, fail2ban, SSH par clé, TLS) |
+| `scripts/provision.sh` | Installe Kubernetes (k3s), nginx, certbot et sécurise le serveur (UFW, fail2ban, SSH par clé, TLS) |
 | `config/` | Configurations nginx et fail2ban appliquées par `provision.sh` |
-| `app/` | Stack de production (Docker Compose, images Docker Hub, volumes persistants) |
-| `scripts/deploy.sh` | Déploie ou met à jour l'application sur le serveur |
+| `k8s/` | Application décrite pour Kubernetes : `base/` (manifestes) et `overlays/` (production, staging) |
+| `app/` | Modèles des secrets de l'application (`*.env.example`) ; les vrais fichiers ne sont pas versionnés |
+| `scripts/deploy.sh` | Déploie ou met à jour l'application sur le cluster |
 
 ## Mise en production en 4 commandes
 
@@ -57,12 +58,14 @@ ssh ubuntu@<serveur> "sudo DOMAIN=wildtransfer.fr ACME_EMAIL=moi@exemple.com /tm
 - SSH par clé uniquement, root interdit par mot de passe
 - fail2ban : SSH, flood HTTP (limit_req), mots de passe HTTP
 - nginx : HTTPS Let's Encrypt, TLS 1.2 et 1.3, HSTS, version masquée, 10 requêtes/s par IP, `/adminer` bloqué
-- Conteneurs liés à `127.0.0.1` uniquement, secrets hors du dépôt
+- Kubernetes : API non exposée, secrets chiffrés au repos (`--secrets-encryption`), base joignable
+  uniquement par le backend (NetworkPolicy), NodePorts fermés par le groupe de sécurité ; secrets hors du dépôt
 
 ## Validation automatique
 
 Le workflow `.github/workflows/infra.yml` vérifie à chaque modification de `infra/` :
-format et validité Terraform, ShellCheck sur les scripts, compose et configuration nginx valides.
+format et validité Terraform, ShellCheck sur les scripts, manifestes Kubernetes conformes aux schémas
+(kustomize + kubeconform) et configuration nginx valide.
 
 ## Images de l'application
 
@@ -71,18 +74,38 @@ sous un tag dédié (ex. `iscod`). Le tag `latest` (ancienne production OVH) est
 
 ## Environnements
 
-| Environnement | Adresse | Dossier serveur | Port interne | Secrets locaux |
+| Environnement | Adresse | Namespace Kubernetes | NodePort | Secrets locaux |
 |---|---|---|---|---|
-| Production | https://wildtransfer.fr | `/opt/wildtransfer` | 7007 | `app/backend.env`, `app/storage-api.env` |
-| Staging (test) | https://staging.wildtransfer.fr | `/opt/wildtransfer-staging` | 7008 | `app/backend.staging.env`, `app/storage-api.staging.env` |
+| Production | https://wildtransfer.fr | `wildtransfer` | 30007 | `app/backend.env`, `app/storage-api.env` |
+| Staging (test) | https://staging.wildtransfer.fr | `wildtransfer-staging` | 30008 | `app/backend.staging.env`, `app/storage-api.staging.env` |
 
-Chaque environnement a sa propre base, ses propres fichiers (volumes Docker) et ses propres secrets.
+Les deux environnements utilisent exactement les mêmes manifestes (`k8s/base`) : seuls le namespace et le
+port changent. Chacun a sa propre base, ses propres fichiers (volumes persistants) et ses propres secrets.
 
 ```bash
 APP_ENV=staging IMAGE_TAG=sha-1a2b3c4 ./infra/scripts/deploy.sh ubuntu@<serveur>
 ```
 
-`deploy.sh` attend que tous les conteneurs soient sains ; sinon, il remet automatiquement la version précédente.
+`deploy.sh` envoie les manifestes, génère les secrets Kubernetes depuis les fichiers `.env`, fixe la version
+des images et lance `kubectl apply`. Kubernetes remplace les pods un par un (une nouvelle version doit être
+prête avant l'arrêt de l'ancienne) ; si elle ne devient pas saine, `deploy.sh` remet la version précédente.
+
+## Kubernetes (k3s)
+
+| Composant | Objet Kubernetes | Persistance |
+|---|---|---|
+| PostgreSQL | StatefulSet `db` + NetworkPolicy (backend seulement) | volume 2 Go |
+| API GraphQL | Deployment `backend` | |
+| API de stockage | Deployment `storage-api` | volume `uploads` 5 Go |
+| Interface React | Deployment `frontend` | |
+| Passerelle nginx | Deployment `api-gateway` + Service NodePort | |
+
+Chaque conteneur a des sondes de santé (démarrage, disponibilité, vie), une réservation et une limite mémoire.
+
+```bash
+ssh ubuntu@<serveur> sudo k3s kubectl -n wildtransfer get pods          # état de la production
+ssh ubuntu@<serveur> sudo k3s kubectl -n wildtransfer rollout undo deployment/backend   # retour manuel
+```
 
 ## Sauvegardes
 
@@ -94,7 +117,7 @@ serveur : aucune clé AWS sur le serveur, et un serveur compromis ne peut ni lir
 ```bash
 # Restaurer la base de production depuis la dernière sauvegarde
 F=$(sudo sh -c "ls -t /var/backups/wildtransfer/wildtransfer-db-*.sql.gz | head -1")
-sudo gunzip -c "$F" | (cd /opt/wildtransfer && sudo docker compose exec -T db psql -q -U postgres)
+sudo gunzip -c "$F" | sudo k3s kubectl -n wildtransfer exec -i statefulset/db -- psql -q -U postgres
 ```
 
 ## Déploiement continu et mise en production (GitHub Actions)

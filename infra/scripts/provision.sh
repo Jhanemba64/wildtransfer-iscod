@@ -5,7 +5,8 @@
 # Options : DOMAIN_ALIASES (autres noms de la production, ex. www.wildtransfer.fr),
 #           STAGING_DOMAIN (environnement de test sur le même serveur), MONITORING_DOMAIN (Grafana),
 #           ADMIN_IP (jamais banni),
-#           BACKUP_S3_URL (copie des sauvegardes hors serveur).
+#           BACKUP_S3_URL (copie des sauvegardes hors serveur),
+#           K3S_VERSION (version de Kubernetes installée).
 set -euo pipefail
 
 : "${DOMAIN:?DOMAIN requis}"
@@ -15,6 +16,7 @@ MONITORING_DOMAIN=${MONITORING_DOMAIN:-}
 ACME_EMAIL=${ACME_EMAIL:-}
 ADMIN_IP=${ADMIN_IP:-}
 BACKUP_S3_URL=${BACKUP_S3_URL:-}
+K3S_VERSION=${K3S_VERSION:-v1.36.5+k3s1}
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 CONF_DIR="$(cd "$SCRIPT_DIR/../config" && pwd)"
 export DEBIAN_FRONTEND=noninteractive
@@ -24,7 +26,7 @@ apt-get update -q
 apt-get install -y -q ca-certificates curl nginx certbot python3-certbot-nginx \
     ufw fail2ban unattended-upgrades gettext-base
 
-echo "==> Docker"
+echo "==> Docker (pile de supervision)"
 if ! command -v docker >/dev/null; then
     curl -fsSL https://get.docker.com | sh
 fi
@@ -47,6 +49,17 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw --force enable
 
+echo "==> Kubernetes (k3s $K3S_VERSION, nœud unique) : orchestre l'application"
+# Sans Traefik ni répartiteur intégré : le nginx de l'hôte (TLS) reste le seul point d'entrée.
+# API Kubernetes non exposée (6443 fermé par UFW et le groupe de sécurité), secrets chiffrés au repos.
+if ! command -v k3s >/dev/null; then
+    curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="$K3S_VERSION" \
+        INSTALL_K3S_EXEC="--disable traefik --disable servicelb --secrets-encryption --write-kubeconfig-mode 600" sh -
+fi
+# Les pods (10.42.0.0/16) et les services (10.43.0.0/16) doivent pouvoir joindre le nœud malgré UFW
+ufw allow from 10.42.0.0/16
+ufw allow from 10.43.0.0/16
+
 echo "==> SSH : authentification par clé uniquement"
 cat > /etc/ssh/sshd_config.d/10-wildtransfer.conf <<'EOF'
 PasswordAuthentication no
@@ -65,7 +78,8 @@ install -m 644 "$CONF_DIR/nginx/security.conf" /etc/nginx/conf.d/security.conf
 sed -i 's/ssl_protocols .*/ssl_protocols TLSv1.2 TLSv1.3;/' /etc/nginx/nginx.conf
 rm -f /etc/nginx/sites-enabled/default
 
-# Un vhost par service : production (7007) et, si demandés, staging (7008) et supervision Grafana (3003)
+# Un vhost par service : production (NodePort 30007) et, si demandés, staging (NodePort 30008)
+# et supervision Grafana (3003)
 site() {
     local name=$1 domain=$2 port=$3
     # '$DOMAIN $APP_PORT' est la liste des variables à substituer, pas une expansion
@@ -77,9 +91,9 @@ site() {
 # Chaque entrée de DOMAINS regroupe les noms d'un même certificat (séparés par des espaces)
 PROD_NAMES=$(echo "$DOMAIN $DOMAIN_ALIASES" | xargs)
 DOMAINS=("$PROD_NAMES")
-site wildtransfer "$PROD_NAMES" 7007
+site wildtransfer "$PROD_NAMES" 30007
 if [ -n "$STAGING_DOMAIN" ]; then
-    site wildtransfer-staging "$STAGING_DOMAIN" 7008
+    site wildtransfer-staging "$STAGING_DOMAIN" 30008
     DOMAINS+=("$STAGING_DOMAIN")
 fi
 if [ -n "$MONITORING_DOMAIN" ]; then

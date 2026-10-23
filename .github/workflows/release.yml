@@ -11,6 +11,7 @@ on:
             - 'backend/**'
             - 'storage-api/**'
             - 'infra/app/**'
+            - 'infra/k8s/**'
             - 'infra/scripts/deploy.sh'
     workflow_dispatch:
         inputs:

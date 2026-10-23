@@ -1,0 +1,67 @@
+# API GraphQL (Apollo). Secrets : backend-env, généré par deploy.sh depuis infra/app/backend*.env
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - port: 4000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  # Mise à jour progressive : la nouvelle version doit être prête avant l'arrêt de l'ancienne
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: pierrick64/wildtransfer-backend
+          envFrom:
+            - secretRef:
+                name: backend-env
+          ports:
+            - containerPort: 4000
+          # Une vraie requête GraphQL : l'API répond et sa base est joignable
+          startupProbe:
+            exec:
+              command: &graphql
+                - sh
+                - -c
+                - >-
+                  curl -sf -X POST -H 'content-type: application/json'
+                  --data '{"query":"query { __typename }"}' http://localhost:4000
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 36
+          readinessProbe:
+            exec:
+              command: *graphql
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: *graphql
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              memory: 384Mi

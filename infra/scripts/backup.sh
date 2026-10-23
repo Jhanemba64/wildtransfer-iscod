@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Sauvegarde quotidienne de WildTransfer : base de données + fichiers uploadés, pour chaque environnement
-# déployé (production, staging). Rétention locale 14 jours. Installé par provision.sh (cron 03h30).
+# déployé sur Kubernetes (namespaces wildtransfer et wildtransfer-staging). Rétention locale 14 jours.
+# Installé par provision.sh (cron 03h30).
 # Si BACKUP_S3_URL est défini, chaque sauvegarde est aussi copiée hors du serveur dans S3
 # (bucket en écriture seule, réservé à l'IP du serveur : aucune clé AWS sur le serveur).
 set -euo pipefail
@@ -11,14 +12,13 @@ D=$(date +%F_%H%M)
 umask 077
 mkdir -p "$DEST"
 
-for dir in /opt/wildtransfer /opt/wildtransfer-staging; do
-    [ -f "$dir/docker-compose.yml" ] || continue
-    env=$(basename "$dir")
-    (cd "$dir" && docker compose exec -T db pg_dump -U postgres --clean --if-exists postgres) \
-        | gzip > "$DEST/$env-db-$D.sql.gz"
-    docker run --rm -v "${env}_uploads:/data:ro" alpine tar czf - -C /data . > "$DEST/$env-uploads-$D.tar.gz"
+for ns in wildtransfer wildtransfer-staging; do
+    k3s kubectl get namespace "$ns" >/dev/null 2>&1 || continue
+    k3s kubectl -n "$ns" exec statefulset/db -- pg_dump -U postgres --clean --if-exists postgres \
+        | gzip > "$DEST/$ns-db-$D.sql.gz"
+    k3s kubectl -n "$ns" exec deploy/storage-api -- tar czf - -C /app/uploads . > "$DEST/$ns-uploads-$D.tar.gz"
     # Un dump valide commence par l'en-tête pg_dump
-    gzip -dc "$DEST/$env-db-$D.sql.gz" | head -c 4096 | grep -q 'PostgreSQL database dump'
+    gzip -dc "$DEST/$ns-db-$D.sql.gz" | head -c 4096 | grep -q 'PostgreSQL database dump'
 done
 
 find "$DEST" -name '*.gz' -mtime +14 -delete
